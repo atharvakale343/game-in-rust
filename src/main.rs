@@ -25,14 +25,15 @@ fn main() {
     let game_answer: i32 = rng.gen_range(0..100);
 
     let mut game_state = GameState::InProgress;
-    let mut number: i32;
+    let mut input_guess: i32;
     let mut last_answer_diff = 0;
 
     while game_state == GameState::InProgress {
         print!("Guess a number between 1 and 100: ");
         Write::flush(&mut io::stdout()).unwrap();
-        number = get_input();
-        let answer_accuracy: Closeness = test_answer(number, &mut last_answer_diff, game_answer);
+        input_guess = get_input();
+        let answer_accuracy: Closeness =
+            test_answer(input_guess, &mut last_answer_diff, game_answer);
         match answer_accuracy {
             Closeness::Same => println!("C'mon, give me something new!"),
             Closeness::Hot => println!("Wow, your guess is flaming!"),
@@ -42,7 +43,7 @@ fn main() {
             Closeness::Hit => {
                 println!("Nice. Bullseye!");
                 game_state = GameState::Complete;
-            },
+            }
         }
     }
 }
@@ -53,39 +54,24 @@ fn test_answer(number: i32, last_answer_diff: &mut i32, answer: i32) -> Closenes
     }
     let diff = (number - answer).abs();
     let closeness: Closeness;
-    if diff <= 30 {
-        if *last_answer_diff != 0 {
-            if *last_answer_diff == diff {
-                closeness = Closeness::Same;
-            }
-            else if diff < *last_answer_diff {
-                closeness = Closeness::Hotter;
-            } else {
-                closeness = Closeness::Colder;
-            }
+    if *last_answer_diff != 0 {
+        match diff.cmp(last_answer_diff) {
+            std::cmp::Ordering::Less => closeness = Closeness::Hotter,
+            std::cmp::Ordering::Equal => closeness = Closeness::Same,
+            std::cmp::Ordering::Greater => closeness = Closeness::Colder,
         }
-        else {
-            closeness = Closeness::Hot;
-        }
-    }
-    else {
-        if *last_answer_diff != 0 {
-            if *last_answer_diff == diff {
-                closeness = Closeness::Same;
-            }
-            else if diff < *last_answer_diff {
-                closeness = Closeness::Hotter;
-            } else {
-                closeness = Closeness::Colder;
-            }
-        }
-        else {
-            closeness = Closeness::Cold;
-        }
+    } else if diff <= 30 {
+        closeness = Closeness::Hot;
+    } else {
+        closeness = Closeness::Cold;
     }
 
-    *last_answer_diff = if !(closeness == Closeness::Same) {diff} else {*last_answer_diff};
-    return closeness;
+    *last_answer_diff = if !(closeness == Closeness::Same) {
+        diff
+    } else {
+        *last_answer_diff
+    };
+    closeness
 }
 
 fn get_input() -> i32 {
@@ -97,14 +83,14 @@ fn get_input() -> i32 {
             exit(1)
         }
     }
-    let number = match input.trim().parse::<i32>(){
+    let number = match input.trim().parse::<i32>() {
         Ok(n) => n,
         Err(_) => {
             println!("Enter numbers only between 1 and 100");
             exit(1);
         }
     };
-    if number < 1 || number > 100 {
+    if !(1..=100).contains(&number) {
         println!("Enter numbers only between 1 and 100");
         exit(1);
     }
